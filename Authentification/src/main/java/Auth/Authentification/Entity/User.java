@@ -30,7 +30,7 @@ public class User implements UserDetails {
     @Column
     private  String email;
     @Column
-    private String password;
+    private String password ;
     @Column
     private boolean isDeleted ;
     @Column
@@ -41,17 +41,11 @@ public class User implements UserDetails {
     @ManyToOne
     private Role role;
 
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (role != null) {
-            return List.of(new SimpleGrantedAuthority(role.getName()));
-        } else {
-            // Handle the case where role is null.
-            // You can return an empty list or throw an exception, depending on your requirements.
-            return Collections.emptyList();
-        }
+        return List.of(new SimpleGrantedAuthority(role.getName()));
     }
-
 
     @Override
     public String getPassword() {
@@ -62,7 +56,6 @@ public class User implements UserDetails {
     public String getUsername() {
         return email;
     }
-
 
     @Override
     public boolean isAccountNonExpired() {

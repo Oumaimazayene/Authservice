@@ -1,5 +1,6 @@
 package Auth.Authentification.Auth;
 
+import Auth.Authentification.Entity.Role;
 import Auth.Authentification.Entity.User;
 import Auth.Authentification.Repository.RoleRepository;
 import Auth.Authentification.Repository.UserRepository;
@@ -39,66 +40,35 @@ public class AuthenticationService {
 
 
     public AuthentificationResponce register(registerRequest request) {
-        var roleName = request.getRole().getName();
-        var role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new IllegalArgumentException("Le rôle spécifié n'est pas valide."));
+            var roleName = request.getRole().getName();
+            var role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new IllegalArgumentException("Le rôle spécifié n'est pas valide."));
 
-        var userBuilder = User.builder()
-                .firstname(request.getFirstname())
-                .lastname(request.getLastname())
-                .email(request.getEmail())
-                .role(role);
-        if ("recrutteur".equals(roleName)) {
-            userBuilder.password(generateTemporaryPassword());
-
-        } else {
-            throw new IllegalArgumentException("Le rôle spécifié n'est pas accepté.");
-        }
-        var user = userBuilder.build();
-        repository.save(user);
-        var jwtToken = jwtService.generateToken(user);
-        return AuthentificationResponce.builder()
-                .token(jwtToken)
-                .build();
-    }
-    public AuthentificationResponce authenticate(AuthenticationRequest request) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
-                            request.getPassword()
-                    )
-            );
-
-            var user = repository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
+            var userBuilder = User.builder()
+                    .firstname(request.getFirstname())
+                    .lastname(request.getLastname())
+                    .email(request.getEmail())
+                    .role(role);
+            var user = userBuilder.build();
+            repository.save(user);
             var jwtToken = jwtService.generateToken(user);
             return AuthentificationResponce.builder()
                     .token(jwtToken)
                     .build();
-        } catch (BadCredentialsException e) {
-            throw new BadCredentialsException("Invalid credentials", e);
-        } catch (UsernameNotFoundException e) {
-            throw new UsernameNotFoundException("User not found", e);
-        }
-    }
-
-
-
-
-
-    private String generateTemporaryPassword() {
-        StringBuilder stringBuilder = new StringBuilder(PASSWORD_LENGTH);
-        SecureRandom secureRandom = new SecureRandom();
-
-        for (int i = 0; i < PASSWORD_LENGTH; i++) {
-            int randomIndex = secureRandom.nextInt(CHARACTERS.length());
-            char randomChar = CHARACTERS.charAt(randomIndex);
-            stringBuilder.append(randomChar);
         }
 
-        return stringBuilder.toString();
-    }
+    public AuthentificationResponce authenticate(AuthenticationRequest request) {
+authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(
+                request.getEmail(),
+                request.getPassword()
+        )
+);
+          var user = repository.findByEmail(request.getEmail()).orElseThrow();
+        var jwtToken = jwtService.generateToken(user);
+        return AuthentificationResponce.builder()
+                .token(jwtToken)
+                .build();
 
+    }
 }

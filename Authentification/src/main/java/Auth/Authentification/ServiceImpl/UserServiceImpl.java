@@ -10,6 +10,7 @@ import lombok.Data;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -22,7 +23,8 @@ public class UserServiceImpl implements UserService {
     private final UserMapp userMapp;
     private final  EmailServiceImpl emailService;
     private final PasswordEncoder passwordEncoder;
-
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final int PASSWORD_LENGTH = 12;
     @Override
     public User getUserById(Long id) {
         return userRepository.findById(id).orElse(null);
@@ -75,20 +77,20 @@ public class UserServiceImpl implements UserService {
             User user = optionalUser.get();
 
             if (!user.isVerified()) {
-                // Si l'utilisateur n'est pas encore validé, procédez à la validation
                 user.setVerified(true);
-                userRepository.save(user);
+                String temporaryPassword = generateTemporaryPassword();
 
-                // Envoi de l'email de validation
-                sendValidationEmail(user);
+                sendValidationEmail(user, temporaryPassword);
+                user.setPassword(passwordEncoder.encode(temporaryPassword));
+                userRepository.save(user);
             } else {
                 System.out.println("l'utilisateur  est déja verifier ");            }
         } else {
             System.out.println("utilisateur avec l'id "+userId+"n'est pas trouvé");        }
     }
 
-    private void sendValidationEmail(User user) {
-        if (user.isVerified() && "recrutteur".equals(user.getRole().getName())) {
+    private void sendValidationEmail(User user, String temporaryPassword) {
+        if ("recrutteur".equals(user.getRole().getName())) {
             String subject = "Validation de Compte WindTestHub";
             String body = "Cher recruteur,\n\n"
                     + "Votre compte a été validé avec succès. Nous vous remercions de votre inscription.\n"
@@ -97,12 +99,25 @@ public class UserServiceImpl implements UserService {
                     + "Prénom: " + user.getFirstname() + "\n"
                     + "E-mail: " + user.getEmail() + "\n"
                     + "Rôle: " + user.getRole().getName() + "\n"
-                    + "Mot de passe: " + user.getPassword() + "\n\n"
+                    + "Mot de passe temporaire: " + temporaryPassword + "\n\n"
+                    + "Veuillez changer votre mot de passe dès que possible après la connexion.\n\n"
                     + "Bienvenue dans notre communauté !\n\n"
                     + "Cordialement,\n"
                     + "L'équipe de Wind Consulting Tunisia";
             emailService.sendEmail(user.getEmail(), subject, body);
         }
+    }
+    private String generateTemporaryPassword() {
+        StringBuilder stringBuilder = new StringBuilder(PASSWORD_LENGTH);
+        SecureRandom secureRandom = new SecureRandom();
+
+        for (int i = 0; i < PASSWORD_LENGTH; i++) {
+            int randomIndex = secureRandom.nextInt(CHARACTERS.length());
+            char randomChar = CHARACTERS.charAt(randomIndex);
+            stringBuilder.append(randomChar);
+        }
+
+        return stringBuilder.toString();
     }
 
 
